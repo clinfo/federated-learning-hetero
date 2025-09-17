@@ -117,7 +117,8 @@ class Config(AbstractConfiguration):
 
     def check_update_config(self):
         if self.job_command not in ["find_best_checkpoint", "find_threshold"]:
-            self.output_path = str(Path(self.output_path) / datetime.now().strftime("%Y-%m-%d_%H-%M"))
+            self.output_path = str(Path(self.output_path))
+            #self.output_path = str(Path(self.output_path) / datetime.now().strftime("%Y-%m-%d_%H-%M"))
 
         if getattr(self, "observers") is None:
             setattr(self, "observers", {})

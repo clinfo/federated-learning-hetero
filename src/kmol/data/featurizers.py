@@ -25,8 +25,10 @@ from torch_geometric.data import Data as TorchGeometricData
 from scipy.stats import bernoulli
 import logging
 
+from transformers import AutoTokenizer, EsmModel
 from moleculekit.molecule import Molecule
 from openbabel import openbabel, pybel
+from rdkit.Chem import AllChem
 
 from kmol.data.resources import DataPoint
 from kmol.data.loaders import ListLoader
@@ -185,6 +187,26 @@ class MordredDescriptorComputer(AbstractDescriptorComputer):
         self._calculator = Calculator(descriptors, ignore_3D=True)
 
     def run(self, mol: Chem.Mol, entry: DataPoint) -> List[Union[int, float]]:
+
+        descriptors = self._calculator(mol)
+        
+        return list(descriptors.fill_missing(0))
+    
+class Mordred3dDescriptorComputer(AbstractDescriptorComputer):
+    """
+    There is 1826 feature generated with this computer
+    """
+
+    def __init__(self):
+        from mordred import Calculator, descriptors
+
+        self._calculator = Calculator(descriptors, ignore_3D=False)
+
+    def run(self, mol: Chem.Mol, entry: DataPoint) -> List[Union[int, float]]:
+        mol = Chem.AddHs(mol)
+        AllChem.EmbedMolecule(mol, randomSeed=42)
+        AllChem.MMFFOptimizeMolecule(mol, maxIters=500, nonBondedThresh=200.0)
+        
         descriptors = self._calculator(mol)
 
         return list(descriptors.fill_missing(0))
@@ -476,6 +498,37 @@ class BagOfWordsFeaturizer(AbstractFeaturizer):
 
         return torch.FloatTensor(list(sample.values()))
 
+class EsmFeaturizer(AbstractFeaturizer):
+    def __init__(
+        self,
+        inputs: List[str],
+        outputs: List[str],
+        model_name: str,
+        should_cache: bool = False,
+        rewrite: bool = True,
+    ):
+        super().__init__(inputs, outputs, should_cache, rewrite)
+        try:
+            torch.multiprocessing.set_start_method("spawn")
+        except RuntimeError:
+            pass
+        self._model_name = model_name
+        self._tokenizer = AutoTokenizer.from_pretrained(model_name)
+        self._model = EsmModel.from_pretrained(model_name)
+        self._model.half()
+        self._model.eval()
+        self._model.to("cuda")
+
+    def _process(self, data: str, entry: DataPoint) -> torch.FloatTensor:
+        inputs = self._tokenizer(data, return_tensors="pt", add_special_tokens=True).to("cuda")
+        with torch.no_grad():
+            outputs = self._model(**inputs)
+        
+        last_hidden_layer = outputs.last_hidden_state
+        cls_embedding = last_hidden_layer[0, 0, :]
+        cls_embedding = cls_embedding.to(torch.float32).cpu()
+        
+        return torch.FloatTensor(cls_embedding)
 
 class IndexFeaturizer(AbstractFeaturizer):
     def __init__(

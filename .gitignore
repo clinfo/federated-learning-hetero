@@ -22,3 +22,6 @@ src/kmol/vendor/graphormer/algos.*.so
 
 docker/kmol.tar.gz
 docker/environment.yml
+
+Biogen_ADME/
+run_biogen_adme.sh

@@ -8,7 +8,7 @@
         "dropout": 0.15,
         "layer_type": "torch_geometric.nn.GCNConv",
         "layers_count": 3,
-        "molecule_features": 17,
+        "molecule_features": 1826,
         "is_residual": true,
         "norm_layer": "kmol.model.layers.BatchNorm"
     },
@@ -30,7 +30,7 @@
             "type": "graph",
             "inputs": ["smiles"],
             "outputs": ["graph"],
-            "descriptor_calculator": {"type": "rdkit"}
+            "descriptor_calculator": {"type": "mordred3d"}
         }
     ],
     "transformers": [{"type": "log_normalize", "targets": [0]}],

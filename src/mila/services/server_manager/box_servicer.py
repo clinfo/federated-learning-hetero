@@ -3,7 +3,7 @@ from pathlib import Path
 
 from kmol.core.logger import LOGGER as logging
 
-from mila.services.server_manager import ServerManager, Participant
+from .server_manager import ServerManager, Participant
 from mila.services.box_utils import Box, File, User
 from mila.configs import ServerConfiguration
 

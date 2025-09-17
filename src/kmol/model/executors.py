@@ -131,6 +131,8 @@ class Trainer(AbstractExecutor):
 
         try:
             self._load_checkpoint(train=True)
+            self.anchor_params = {name: param.clone().detach() for name, param in self.network.named_parameters()}
+            logging.info("Checkpoint loaded successfully")
         except CheckpointNotFound:
             pass
 
@@ -304,6 +306,7 @@ class Predictor(AbstractExecutor):
 
         # Macros of observers are launched in criterions, so it should be initialized even in predictor
         criterion = SuperFactory.create(AbstractCriterion, self.config.criterion).to(self.config.get_device())
+        print(self.network)
 
     def set_hook_probe(self):
         if isinstance(self.network, EnsembleNetwork):
