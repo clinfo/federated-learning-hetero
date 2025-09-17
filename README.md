@@ -1,4 +1,9 @@
-![](docs/logo.png)
+# Empowering Federated Learning for Robust Compound-Protein Interaction Prediction across Heterogeneous Cross-Pharma Domains
+
+**Authors:** Takuto Koyama et al.
+
+<img src="docs/figure1.png" width="70%">
+
 --------------------------------------------------------------------------------
 
 kMoL is a machine learning library for drug discovery and life sciences, with federated learning capabilities.
@@ -12,6 +17,8 @@ Models are built using PyTorch and PyTorch Geometric.
 kMoL can be used by installing it in a conda virtual environment or in a docker container. The following sections will describe how to install/use kMoL in each
 installation mode. You can choose whichever better fit your needs.
 
+**Requirements**: This project requires `transformers>=4.45.2` for proper functionality.
+
 ### Using a conda virtual environment
 
 This kind of installation is usually better if you already have conda installed or if you want to tweak kMoL code.
@@ -19,36 +26,11 @@ This kind of installation is usually better if you already have conda installed 
 ```bash
 make create-env
 conda activate kmol
+pip install transformers>=4.45.2
 ```
 
 You can then run `kmol` commands in the current shell and code/configurations changes will be picked up immediately.
 Refer to the 'kMoL usage' section below for parameters
-
-### Using a docker container
-
-A docker image will be created with a miniforge installation and the current version of kMoL. Beside docker and working gpu drivers
-on the host, it will be self contained and can be used by multiple users. On the other hand, if you want to tweak the code, you'll need to rebuild the
-images after each modification: for this it is more efficient to install kMoL in a virtual environment on the host (eventually switching to the
-docker installation to share your version)
-
-```bash
-make build-docker
-```
-
-Once an image with the current version is created, you can run kmol by passing the job/config to the 'docker run' command like this:
-
-```bash
-# Simplest command, will run 'kmol {job} {path_to_config}' in a container
-docker run --rm -ti --gpus=all -e KMOL_UID=$(id -u) -e KMOL_GID=$(id -g) -v ./data:/home/kmol/data elix-kmol:1.1.9.2 {job} {path_to_config}
-
-# Running without a parameter will start an interactive shell in the same environment then manually launching commands is also possible
-docker run --rm -ti --gpus=all -e KMOL_UID=$(id -u) -e KMOL_GID=$(id -g) -v ./data:/home/kmol/data elix-kmol:1.1.9.2
-```
-
-Note: The configuration files provided are intended to be used with the 'conda virtual environment' installation where kMoL is installed
-in development mode. When using the docker image, you'll have to adjust the paths in the config files accordingly. For example, in the
-configuration file "tox21.json", the "loader">"input_path" value is set to "data/datasets/tox21.csv": in the docker container this would point
-to an incorrect location. Replace it with "/home/kmol/data/datasets/tox21.csv", matching the volume bind of the docker run command.
 
 ## kMoL usage
 
