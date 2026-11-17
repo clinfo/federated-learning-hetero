@@ -201,3 +201,20 @@ If other type of aggregator is needed, only `aggregator_type` and `aggregator_op
 needs to be change.
 
 You can find the aggregator and their argument in `src/mila/aggregators.py`
+
+## Citation
+
+If you use this work, please cite:
+
+```bibtex
+@article{koyama2026empowering,
+  title={Empowering federated learning for robust compound-protein interaction prediction across heterogeneous cross-pharma domains},
+  author={Koyama, Takuto and Iwata, Hiroaki and Kojima, Ryosuke and Otsuka, Takao and Hasegawa, Aki and Lee, Seungeon and Ueda, Hiroshi and Morimoto, Toshiharu and Sasaki, Ryoko and Torimoto, Nao and others},
+  journal={Journal of Cheminformatics},
+  volume={18},
+  number={1},
+  pages={16},
+  year={2026},
+  publisher={Springer}
+}
+```
