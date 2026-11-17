@@ -1,0 +1,26 @@
+{
+    "task_configuration_file": "data/FL_31_gpcr/homo_4clients/graph_ligand+esm_protein.json",
+    "server_type": "mila.services.servers.grpc_server.GrpcServer",
+    "server_manager_type": "mila.services.server_manager.grpc_servicer.GrpcServicer",
+    "aggregator_type": "mila.aggregators.PlainTorchAggregator",
+    "config_type": "kmol.core.config.Config",
+    "executor_type": "kmol.run.Executor",
+    "save_path": "data/FL_31_gpcr/homo_4clients/server",
+
+    "grpc_configuration": {
+        "target": "localhost:8024",
+    
+        "options": [
+              ["grpc.max_send_message_length", 1000000000],
+              ["grpc.max_receive_message_length", 1000000000],
+              ["grpc.ssl_target_name_override", "localhost"]
+          ]
+    },
+    
+    "rounds_count": 10,
+    "workers": 0,
+    "minimum_clients": 4,
+    "maximum_clients": 4,
+
+    "client_wait_time": 300
+}

@@ -1,0 +1,125 @@
+{
+    "model": {
+        "type": "protein_ligand",
+        "protein_module": {
+            "type": "linear",
+            "in_features": 480,
+            "hidden_features": 256,
+            "out_features": 128,
+            "dropout": 0.1
+        },
+        "ligand_module": {
+            "type": "graph_convolutional",
+            "in_features": 45,
+            "out_features": 128,
+            "hidden_features": 256,
+            "dropout": 0.1,
+            "layer_type": "torch_geometric.nn.GENConv",
+            "layers_count": 3,
+            "molecule_features": 17,
+            "is_residual": 1,
+            "norm_layer": "kmol.model.layers.BatchNorm"
+        },
+        "hidden_features": 64,
+        "out_features": 1
+    },
+    "loader": {
+        "type": "csv",
+        "input_path": "data/FL_31_gpcr/hetero_5clients/cluster1.csv.gz",
+        "input_column_names": [
+            "smiles",
+            "target_sequence"
+        ],
+        "target_column_names": [
+            "t_1u"
+        ]
+    },
+    "splitter": {
+        "type": "random",
+        "splits": {
+            "train": 0.8,
+            "validation": 0.2
+        },
+        "seed": 0
+    },
+    "featurizers": [
+        {
+            "type": "graph",
+            "inputs": [
+                "smiles"
+            ],
+            "outputs": [
+                "ligand"
+            ],
+            "descriptor_calculator": {
+                "type": "rdkit"
+            }
+        },
+        {
+            "type": "esm",
+            "inputs": [
+                "target_sequence"
+            ],
+            "outputs": [
+                "protein"
+            ],
+            "model_name": "facebook/esm2_t12_35M_UR50D",
+            "should_cache": true
+        }
+    ],
+    "transformers": [],
+    "num_workers": 0,
+    "featurization_jobs": 8,
+    "optimizer": {
+        "type": "torch.optim.AdamW",
+        "lr": 1e-4,
+        "weight_decay": 1e-05
+    },
+    "criterion": {
+        "type": "torch.nn.BCEWithLogitsLoss"
+    },
+    "scheduler": {
+        "type": "torch.optim.lr_scheduler.OneCycleLR",
+        "max_lr": 1e-3,
+        "epochs": 100,
+        "pct_start": 0.3,
+        "div_factor": 25,
+        "final_div_factor": 1000
+    },
+    "output_path": "data/FL_31_gpcr/hetero_5clients/cluster1/",
+    "checkpoint_path": null,
+    "threshold": 0.5,
+    "cross_validation_folds": 5,
+    "train_metrics": [
+        "roc_auc",
+        "pr_auc",
+        "accuracy",
+        "precision",
+        "recall",
+        "cohen_kappa"
+    ],
+    "test_metrics": [
+        "roc_auc",
+        "pr_auc",
+        "accuracy",
+        "precision",
+        "recall",
+        "cohen_kappa"
+    ],
+    "epochs": 100,
+    "batch_size": 128,
+    "use_cuda": true,
+    "enabled_gpus": [
+        0
+    ],
+    "cache_location": "data/cache/",
+    "clear_cache": false,
+    "log_level": "info",
+    "log_format": "",
+    "log_frequency": 5,
+    "observers": {},
+    "target_metric": "roc_auc",
+    "optuna_trials": 1000,
+    "drop_last_batch": true,
+    "overwrite_checkpoint": true
+}
