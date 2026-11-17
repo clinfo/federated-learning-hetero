@@ -7,6 +7,15 @@ __pycache__
 !/data/datasets.zip
 !/data/configs
 !/data/sessions
+
+# GPCR federated-learning splits (compound-based, 3/4/5 clients).
+# Track the split CSVs and run configs, but not the run outputs.
+!/data/FL_31_gpcr
+/data/FL_31_gpcr/*/server/
+/data/FL_31_gpcr/*/local/
+/data/FL_31_gpcr/*/client/
+/data/FL_31_gpcr/*/client[0-9]/
+/data/FL_31_gpcr/*/cluster[0-9]/
 sandbox/
 projects/
 notebooks/

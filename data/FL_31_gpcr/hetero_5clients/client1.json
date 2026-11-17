@@ -1,0 +1,25 @@
+{
+    	"name": "client1",
+		"client_type": "mila.services.clients.grpc_client.GrpcClient",
+		"grpc_configuration": {
+			"use_secure_connection": false,
+			"target": "localhost:8024"
+		},
+    	"config_type": "kmol.core.config.Config",
+    	"save_path": "data/FL_31_gpcr/hetero_5clients/client/client1/",
+    	"executor_type": "kmol.run.Executor",
+    	"model_overwrites": {
+        	"output_path": "data/FL_31_gpcr/hetero_5clients/local/client1/",
+        	"epochs": 10,
+		"loader": {
+        		"type": "csv",
+        		"input_path": "data/FL_31_gpcr/hetero_5clients/cluster1.csv.gz",
+        		"input_column_names": ["smiles", "target_sequence"],
+        		"target_column_names": ["t_1u"]
+    		},
+    		"splitter": {
+        		"type": "index",
+        		"splits": {"train": 1}
+		}
+	}
+}

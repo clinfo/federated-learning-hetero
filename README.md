@@ -6,22 +6,16 @@
 
 --------------------------------------------------------------------------------
 
-kMoL is a machine learning library for drug discovery and life sciences, with federated learning capabilities.
-Some of its features include state-of-the-art graph-based predictive models, explainable AI components, and differential privacy for data protection.
-The library was benchmarked on datasets containing ADME properties (Absorption, Distribution, Metabolism, Excretion), toxicity, and binding affinities values.
+This repository contains the code and datasets for the study above. It is built on
+[kMoL](https://github.com/elix-tech/kmol), a machine learning library for drug discovery
+with federated learning capabilities, using PyTorch and PyTorch Geometric.
 
-Models are built using PyTorch and PyTorch Geometric.
+Compound-protein interaction is predicted from a graph encoder over the ligand and an
+ESM-2 encoder over the target sequence. Federated learning is simulated by partitioning
+GPCR activity data across clients that each hold a disjoint set of compounds, under both
+homogeneous and heterogeneous partitions at 3, 4 and 5 clients.
 
 ## Installation
-
-kMoL can be used by installing it in a conda virtual environment or in a docker container. The following sections will describe how to install/use kMoL in each
-installation mode. You can choose whichever better fit your needs.
-
-**Requirements**: This project requires `transformers>=4.45.2` for proper functionality.
-
-### Using a conda virtual environment
-
-This kind of installation is usually better if you already have conda installed or if you want to tweak kMoL code.
 
 ```bash
 make create-env
@@ -29,175 +23,93 @@ conda activate kmol
 pip install transformers>=4.45.2
 ```
 
-You can then run `kmol` commands in the current shell and code/configurations changes will be picked up immediately.
-Refer to the 'kMoL usage' section below for parameters
+This project requires `transformers>=4.45.2`.
 
-## kMoL usage
+## Dataset
 
-All experiments are performed using configuration files (JSON).
+The federated splits are in `data/FL_31_gpcr/`:
 
-A detailed documentation on how to write configuration files can be found under section 3.4 of `docs/documentation.pdf`.
-Sample configurations can be found under `data/configs/model/`.
+| Directory | Clients | Partition |
+|---|---|---|
+| `homo_3clients/` `homo_4clients/` `homo_5clients/` | 3 / 4 / 5 | homogeneous — clients hold comparable amounts of data |
+| `hetero_3clients/` `hetero_4clients/` `hetero_5clients/` | 3 / 4 / 5 | heterogeneous — client sizes are strongly imbalanced |
 
-Each experiment starts with a dataset.
-In these examples we focus on the [Tox21 Dataset](https://tripod.nih.gov/tox21/challenge/data.jsp) for which we define the experimental settings in `data/configs/model/tox21.json`.
-After downloading the dataset to a suitable location, point to dataset with the "input_path" option in this JSON file.
+Each directory holds one `clusterI.csv.gz` per client plus the configs used below.
+`chembl_fl_gpcr_test.csv.gz` is the shared test set. Only the `hetero_*` directories carry
+the fine-tuning configs. See `data/FL_31_gpcr/README.md` for details.
 
-### Training
-The `train` command can be used to train a model.
+## Running
 
-```bash
-kmol train data/configs/model/tox21.json
-```
+All experiments are driven by JSON configuration files. Paths inside them are relative to
+the repository root, so run from there. The example below uses `hetero_3clients`; any
+other directory works the same way, with one client per `clusterI.csv.gz`.
 
-### Finding the best checkpoint
-Training will save a checkpoint for each individual epoch.
-These can be evaluated on a test split to find the best performing one with the `find_best_checkpoint` command.
+### Local baseline
 
-```bash
-kmol find_best_checkpoint data/configs/model/tox21.json
-```
-
-### Validate (a single checkpoint):
-If a `checkpoint_path` is set in the JSON file for a specific checkpoint, it can be evaluated with the `eval` command.
+Train and evaluate a single client on its own shard, with no federation:
 
 ```bash
-kmol eval data/configs/model/tox21.json
+kmol train data/FL_31_gpcr/hetero_3clients/graph_ligand+esm_protein_cluster1.json
+kmol predict data/FL_31_gpcr/hetero_3clients/graph_ligand+esm_protein_cluster1_predict.json
 ```
 
-### Predict
-Running inference is possible with the `predict` command.
-This is performed on the test split by default.
+Repeat for `cluster2` and `cluster3`.
+
+### Federated learning
+
+Start the server, then each client in its own shell:
 
 ```bash
-kmol predict data/configs/model/tox21.json
+mila server data/FL_31_gpcr/hetero_3clients/server.json
 ```
-
-A list of all available commands is available in the documentation.
-
-## Federated Learning Examples
-
-Similar to local training, a JSON configuration is needed to specify the training options.
-
-In addition, a configuration file is needed for the server and each individual client to establish proper communication.
-A detailed documentation on how to configure the server and clients can be found under section 3.5.1 and 3.5.2 of `docs/documentation.pdf` respectively.
-Sample configurations can be found under `data/configs/mila/`.
-
-### Box and Grpc parameters
-
-There are two ways to run a federated example. One is with the grpc protocol to connect the client directly to the server. The second way uses box applications and sends the models to a box shared directory.  There is a needed set up to be done on Box for it to work. The set up won't be explained here, see `docs/box_documentation.pdf` for more details.
-
-The grpc parameter should be contain in `grpc_configuration` like the following:
-
-```json
-  "server_type": "mila.services.servers.GrpcServer",
-  "server_manager_type": "mila.services.server_manager.GrpcServicer",
-  ...
-  "grpc_configuration": {
-    "target": "localhost:8024",
-
-    "options": [
-          ["grpc.max_send_message_length", 1000000000],
-          ["grpc.max_receive_message_length", 1000000000],
-          ["grpc.ssl_target_name_override", "localhost"]
-      ],
-
-    "use_secure_connection": false,
-    "ssl_private_key": "data/certificates/client.key",
-    "ssl_cert": "data/certificates/client.crt",
-    "ssl_root_cert": "data/certificates/rootCA.pem"
-  }
-```
-
-The client configuration only changes having the parameter `client_type` to `mila.services.clients.GrpcClient` istead of `server_type` and `server_manager_type`.
-
-Note: if the user want to leave the default parameter it should still provide an empty directory to the grpc_configuration configuration.
-
-
-As for box we will have a similar config type:
-
-
-```json
-  "server_type": "mila.services.servers.BoxServer",
-  "server_manager_type": "mila.services.server_manager.BoxServicer",
-  ...
-  "box_configuration": {
-    "box_configuration_path": "example_jwt_config.json",
-    "shared_dir_name": "example-folder-jwt",
-    "save_path": "my_path_inside_shared_dir_name",
-    "group_name": "jwt-application-group-name"
-  }
-```
-
-Similar to grpc the client config will only need `client_type` set to `mila.services.clients.BoxClient`
-
-- `box_configuration_path`: The Public / private key pair file downloaded during the admin set up,
-- `shared_dir_name`: The name of the directory shared with the group of the application,
-- `save_path`: The path inside shared_dir_name where the training logs and weights should be save. To avoid issue we also add a date_time layer based on the time launched.,
-- `group_name`: The name of the group of the application
-
-
-### Starting the server
-The server should start before clients start connecting.
 
 ```bash
-mila server data/configs/mila/naive_aggregator/tox21/clients/2/server.json
+mila client data/FL_31_gpcr/hetero_3clients/client1.json
+mila client data/FL_31_gpcr/hetero_3clients/client2.json
+mila client data/FL_31_gpcr/hetero_3clients/client3.json
 ```
 
-### Starting a client
-Once the server is up, clients can join the federated learning process.
+The server waits for all 3 clients, runs 10 rounds, and writes the aggregated model to
+`hetero_3clients/server/10.aggregate.pt`. Evaluate it on the shared test set:
+
 ```bash
-mila client data/configs/mila/naive_aggregator/tox21/clients/2/client1.json
+kmol predict data/FL_31_gpcr/hetero_3clients/graph_ligand+esm_protein_fl_predict.json
 ```
 
-Servers can be configured to wait for a specific number of clients.
-Another client can be simulated from a new terminal:
+### Fine-tuning the federated model
+
+Fine-tune the aggregated model on one client's shard, then evaluate it:
+
 ```bash
-mila client data/configs/mila/naive_aggregator/tox21/clients/2/client2.json
+kmol train data/FL_31_gpcr/hetero_3clients/client1_finetuning.json
+kmol predict data/FL_31_gpcr/hetero_3clients/client1_finetuning_predict.json
 ```
 
-### Runing a Aggregation in Command Line.
+### Notes
 
-Once all model have been run with the kmol module, it is possible to aggregate it using
-what we introduce as a script.
+Outputs (checkpoints, logs, aggregated models) are written into the `server/`, `local/`,
+`client/`, `clientI/` and `clusterI/` subdirectories of the experiment directory, which
+are git-ignored.
 
-It is possible to use a new command line argument called `kmol-script`. This argument
-expects only a config file containing all the necessary argument for that script.
+Each `server.json` binds a fixed gRPC port, and ports are reused across directories, so
+run one experiment at a time or edit `grpc_configuration.target`.
 
-In out case we are want to run a manual aggregation. So we can run:
+For writing your own configurations, see section 3.4 of `docs/documentation.pdf`, and
+sections 3.5.1 and 3.5.2 for the server and client configurations.
 
+## Citation
+
+If you use this work, please cite:
+
+```bibtex
+@article{koyama2026empowering,
+  title={Empowering federated learning for robust compound-protein interaction prediction across heterogeneous cross-pharma domains},
+  author={Koyama, Takuto and Iwata, Hiroaki and Kojima, Ryosuke and Otsuka, Takao and Hasegawa, Aki and Lee, Seungeon and Ueda, Hiroshi and Morimoto, Toshiharu and Sasaki, Ryoko and Torimoto, Nao and others},
+  journal={Journal of Cheminformatics},
+  volume={18},
+  number={1},
+  pages={16},
+  year={2026},
+  publisher={Springer}
+}
 ```
-kmol-script data/configs/manual_aggregator.yaml
-```
-
-`manual_aggregator.yaml` is define as the following:
-
-```yaml
-script:
-  type: "manual_aggregation"
-  chekpoint_paths:
-    - data/logs/local/tester1/2022-10-20_17-10/checkpoint_10.pt
-    - data/logs/local/tester2/2022-10-20_17-10/checkpoint_10.pt
-    - data/logs/local/tester3/2022-10-20_17-10/checkpoint_10.pt
-  aggregator_type: "mila.aggregators.WeightedTorchAggregator"
-  aggregator_options:
-    weights: [0.8, 0.1, 0.1]
-  save_path: "data/logs/manual_aggregator/2.aggregator"
-
-```
-
-- `type`: Would be the type of script we want to run.
-- `checkpoint_paths`: A list of checkpoint path we want to aggregate.
-- `aggregator_type`: The type of aggregator to use.
-- `aggregator_options`: The argument taken to instanciate the aggregator.
-
-Note: that for WeightedTorchAggregator the weights argument is a bit different.
-In mila we are xpecting a dictionary, here a list of weight is enough. The order of
-the weights should follow the order of the checkpoint_paths
-
-- `save_path`: Were to save the aggregator.
-
-If other type of aggregator is needed, only `aggregator_type` and `aggregator_options`
-needs to be change.
-
-You can find the aggregator and their argument in `src/mila/aggregators.py`
